@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class MainManager : MonoBehaviour
 {
@@ -11,6 +14,7 @@ public class MainManager : MonoBehaviour
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text HighScoreText;
     public GameObject GameOverText;
     
     private bool m_Started = false;
@@ -22,6 +26,12 @@ public class MainManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        //Retrieve data from save, if available
+        if(MenuManager.Instance != null)
+        {
+            HighScoreText.text = $"Best Score: {MenuManager.Instance.bestPlayerName} : {MenuManager.Instance.highScore}";
+        }
+
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
         
@@ -55,9 +65,20 @@ public class MainManager : MonoBehaviour
         }
         else if (m_GameOver)
         {
+            MenuManager.Instance.SaveData();
+
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            }
+
+            if (Input.GetKey(KeyCode.Q))
+            {
+#if UNITY_EDITOR
+                EditorApplication.ExitPlaymode();
+#else
+                Application.Quit();
+#endif
             }
         }
     }
@@ -70,6 +91,13 @@ public class MainManager : MonoBehaviour
 
     public void GameOver()
     {
+        if(m_Points > MenuManager.Instance.highScore)
+        {
+            HighScoreText.text = $"Best Score: {MenuManager.Instance.newPlayerName} : {m_Points}";
+            MenuManager.Instance.bestPlayerName = MenuManager.Instance.newPlayerName;
+            MenuManager.Instance.highScore = m_Points;
+            MenuManager.Instance.SaveData();
+        }
         m_GameOver = true;
         GameOverText.SetActive(true);
     }
